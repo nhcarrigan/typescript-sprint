@@ -1,9 +1,18 @@
-import { EventHandler, ChangeEvent } from "react";
+import { InputHTMLAttributes } from "react";
 
-export function Field({ labelText,fieldType,onChange }: { labelText: string,fieldType:string, onChange: EventHandler<ChangeEvent> }) {
+export function Field({
+  labelText,
+  ...inputProps
+}: InputHTMLAttributes<HTMLInputElement> & {
+  labelText: string;
+}) {
+  const prefixLabel =
+    inputProps?.type !== "radio" && inputProps?.type !== "checkbox";
   return (
     <>
-      <label>{labelText}  <input type={fieldType} onChange={onChange}></input></label>
+      {prefixLabel && <label>{labelText}</label>}
+      <input {...inputProps} />
+      {!prefixLabel && <label>{labelText}</label>}
     </>
   );
 }
