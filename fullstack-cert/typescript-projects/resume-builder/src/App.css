@@ -7,11 +7,9 @@ html {
   height: 100%;
 }
 
-.content
-{
-  display:flex;
+.content {
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  width:100%; 
+  width: 100%;
 }
-
