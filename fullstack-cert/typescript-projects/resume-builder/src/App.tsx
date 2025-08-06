@@ -1,6 +1,7 @@
 import { ChangeEvent, useState, useEffect } from "react";
 import "./App.css";
 import { Field } from "./Field";
+import { ResumeEntry } from "./ResumeEntry";
 
 enum Focus {
   FULL_STACK = "Full Stack",
@@ -25,8 +26,21 @@ enum SaveStatus {
   SAVED = "All changes saved",
 }
 
+enum Experience {
+  ENTRY_LEVEL = "Entry-level (0-2 years)",
+  MID_LEVEL = "Mid-level (2-5 years)",
+  SENIOR = "Senior (5+ years)",
+}
+
 const MIN_YEAR = 1976;
 const MAX_YEAR = 2040;
+
+const INVALID_YEAR_ERROR = `Invalid year`;
+const YEAR_TOO_LOW_ERROR = `Year must be after ${MIN_YEAR}`;
+const YEAR_TOO_HIGH_ERROR = `Year must be before ${MAX_YEAR}`;
+const INVALID_PHONE_ERROR =
+  "Phone number should only have digits, spaces, -, (, and )";
+const INVALID_EMAIL_ERROR = "Email should be a correct form of a@b.c";
 
 export function App() {
   const [name, setName] = useState<string>("");
@@ -37,9 +51,17 @@ export function App() {
   const [gradYear, setGradYear] = useState<number>(new Date().getFullYear());
   const [focus, setFocus] = useState<Focus>(Focus.FULL_STACK);
   const [skills, setSkills] = useState<Skills[]>([]);
-  const [gradYearError, setGradYearError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(SaveStatus.READY);
+  const [experience, setExperience] = useState<Experience>(
+    Experience.ENTRY_LEVEL,
+  );
+  const [confidenceLevel, setConfidenceLevel] = useState<number>(5);
+  const [startDate, setStartDate] = useState<string>(
+    new Date().toISOString().split("T")[0],
+  );
 
+  // Non functional simulated saving
   useEffect(() => {
     setSaveStatus(SaveStatus.SAVING);
     const timer = setTimeout(() => {
@@ -48,18 +70,44 @@ export function App() {
     return () => {
       clearTimeout(timer);
     };
-  }, [name, email, phone, objective, degree, gradYear, focus, skills]);
+  }, [
+    name,
+    email,
+    phone,
+    objective,
+    degree,
+    gradYear,
+    focus,
+    skills,
+    experience,
+    confidenceLevel,
+    startDate,
+  ]);
+
+  function updateErrors(error: string, remove: boolean) {
+    if (remove) {
+      setErrors((prev) => prev.filter((e) => e !== error));
+    } else {
+      setErrors((prev) => (prev.includes(error) ? prev : [...prev, error]));
+    }
+  }
 
   function handleUpdateName(e: ChangeEvent) {
     setName((e.target as HTMLInputElement).value);
   }
 
   function handleUpdateEmail(e: ChangeEvent) {
-    setEmail((e.target as HTMLInputElement).value);
+    const newEmail = (e.target as HTMLInputElement).value;
+    setEmail(newEmail);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    updateErrors(INVALID_EMAIL_ERROR, emailRegex.test(newEmail));
   }
 
   function handleUpdatePhone(e: ChangeEvent) {
-    setPhone((e.target as HTMLInputElement).value);
+    const newPhone = (e.target as HTMLInputElement).value;
+    setPhone(newPhone);
+    const phoneRegex = /^[0-9\s-()]*$/;
+    updateErrors(INVALID_PHONE_ERROR, phoneRegex.test(newPhone));
   }
 
   function handleUpdateObjective(e: ChangeEvent) {
@@ -71,16 +119,30 @@ export function App() {
   }
 
   function handleUpdateGradYear(e: ChangeEvent) {
-    const gradYear = parseInt((e.target as HTMLInputElement).value);
-    if (!Number.isSafeInteger(gradYear)) {
-      setGradYearError(`Invalid year`);
-    } else if (gradYear < MIN_YEAR) {
-      setGradYearError(`Year must be after ${MIN_YEAR}`);
-    } else if (gradYear > MAX_YEAR) {
-      setGradYearError(`Year must be before ${MAX_YEAR}`);
+    const yearValue = (e.target as HTMLInputElement).value;
+    const year = parseInt(yearValue);
+
+    if (yearValue === "") {
+      setGradYear(new Date().getFullYear());
+      updateErrors(INVALID_YEAR_ERROR, true);
+      updateErrors(YEAR_TOO_LOW_ERROR, true);
+      updateErrors(YEAR_TOO_HIGH_ERROR, true);
+      return;
+    }
+
+    setGradYear(year);
+
+    const isSafe = Number.isSafeInteger(year);
+    updateErrors(INVALID_YEAR_ERROR, isSafe);
+
+    if (isSafe) {
+      const isAfterMin = year >= MIN_YEAR;
+      updateErrors(YEAR_TOO_LOW_ERROR, isAfterMin);
+      const isBeforeMax = year <= MAX_YEAR;
+      updateErrors(YEAR_TOO_HIGH_ERROR, isBeforeMax);
     } else {
-      setGradYearError(null);
-      setGradYear(parseInt((e.target as HTMLInputElement).value));
+      updateErrors(YEAR_TOO_LOW_ERROR, true);
+      updateErrors(YEAR_TOO_HIGH_ERROR, true);
     }
   }
 
@@ -98,6 +160,18 @@ export function App() {
     }
   }
 
+  function handleUpdateExperience(e: ChangeEvent<HTMLSelectElement>) {
+    setExperience((e.target as HTMLSelectElement).value as Experience);
+  }
+
+  function handleUpdateConfidence(e: ChangeEvent) {
+    setConfidenceLevel(parseInt((e.target as HTMLInputElement).value));
+  }
+
+  function handleUpdateStartDate(e: ChangeEvent) {
+    setStartDate((e.target as HTMLInputElement).value);
+  }
+
   return (
     <>
       <div className="content">
@@ -106,6 +180,15 @@ export function App() {
           <p>
             <em>{saveStatus}</em>
           </p>
+          {errors.length > 0 && (
+            <div className="error">
+              <ul>
+                {errors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <form>
             <div>
               <Field
@@ -154,7 +237,37 @@ export function App() {
                 onChange={handleUpdateGradYear}
                 value={gradYear}
               ></Field>
-              {gradYearError && <p className="error">{gradYearError}</p>}
+            </div>
+
+            <div>
+              <label>Years of Experience: </label>
+              <select value={experience} onChange={handleUpdateExperience}>
+                {Object.values(Experience).map((exp) => (
+                  <option key={exp} value={exp}>
+                    {exp}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Field
+                labelText={`Confidence Level: ${confidenceLevel}`}
+                type={"range"}
+                min={1}
+                max={10}
+                value={confidenceLevel}
+                onChange={handleUpdateConfidence}
+              ></Field>
+            </div>
+
+            <div>
+              <Field
+                labelText={"Available Start Date: "}
+                type={"date"}
+                value={startDate}
+                onChange={handleUpdateStartDate}
+              ></Field>
             </div>
 
             <div>
@@ -194,36 +307,37 @@ export function App() {
         <article>
           <h2>Resume</h2>
           <div>
-            <label>Name: </label>
-            <p id="name">{name}</p>
+            <ResumeEntry label="Name" value={name} />
           </div>
           <div>
-            <label>Email: </label>
-            <p id="email">{email}</p>
+            <ResumeEntry label="Email" value={email} />
           </div>
           <div>
-            <label>Phone: </label>
-            <p id="phone">{phone}</p>
+            <ResumeEntry label="Phone" value={phone} />
           </div>
           <div>
-            <label>Objective: </label>
-            <p id="objective">{objective}</p>
+            <ResumeEntry label="Objective" value={objective} />
           </div>
           <div>
-            <label>Degree: </label>
-            <p id="degree">{degree}</p>
+            <ResumeEntry label="Degree" value={degree} />
           </div>
           <div>
-            <label>Graduation Year: </label>
-            <p id="gradYear">{gradYear}</p>
+            <ResumeEntry label="Graduation Year" value={gradYear} />
           </div>
           <div>
-            <label>Development Focus: </label>
-            <p id="focus">{focus}</p>
+            <ResumeEntry label="Years of Experience" value={experience} />
           </div>
           <div>
-            <label>Skills: </label>
-            <p id="skills">{skills.join(", ")}</p>
+            <ResumeEntry label="Confidence Level" value={confidenceLevel} />
+          </div>
+          <div>
+            <ResumeEntry label="Available Start Date" value={startDate} />
+          </div>
+          <div>
+            <ResumeEntry label="Development Focus" value={focus} />
+          </div>
+          <div>
+            <ResumeEntry label="Skills" value={skills} />
           </div>
         </article>
       </div>
