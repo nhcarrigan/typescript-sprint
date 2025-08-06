@@ -8,13 +8,11 @@ export function Field({
 }) {
   const prefixLabel =
     inputProps?.type !== "radio" && inputProps?.type !== "checkbox";
-  const label = <label>{labelText}</label>;
-
   return (
     <>
-      {prefixLabel && label}
+      {prefixLabel && <label>{labelText}</label>}
       <input {...inputProps} />
-      {!prefixLabel && label}
+      {!prefixLabel && <label>{labelText}</label>}
     </>
   );
 }
