@@ -5,6 +5,7 @@ interface StatBarProps {
   label: string;
   value: number;
   icon: string;
+  reverse?: boolean;
 }
 
 function getStatColorClass(value: number): string {
@@ -13,8 +14,9 @@ function getStatColorClass(value: number): string {
   return "low";
 }
 
-function StatBar({ label, value, icon }: StatBarProps) {
-  const colorClass = getStatColorClass(value);
+function StatBar({ label, value, icon, reverse = false }: StatBarProps) {
+  const colorClass = getStatColorClass(!reverse ? value : 100 - value);
+
 
   return (
     <div className="stat-bar">
@@ -91,8 +93,6 @@ const moodEmojiMap: Record<PetMood, string> = {
   [PetMood.Hungry]: "😹", // joy cat (closest to hungry/funny)
 };
 
-const STORAGE_KEY = "pet";
-
 interface usePetProps {
   isGameStarted: boolean;
   setGameStarted: React.Dispatch<React.SetStateAction<boolean>>;
@@ -139,15 +139,15 @@ function usePet({ isGameStarted }: usePetProps) {
     setPet((pet) => ({
       ...pet,
       hunger: Math.max(pet.hunger - STAT_DECAY_RATES.hunger, 0),
-      energy: Math.max(pet.energy + STAT_DECAY_RATES.energy, 0),
+      energy: Math.min(pet.energy + STAT_DECAY_RATES.energy, 100),
     }));
   }
 
   function playWithPet() {
     setPet((pet) => ({
       ...pet,
-      happiness: Math.min(pet.happiness + STAT_DECAY_RATES.happiness, 100),
       energy: Math.max(pet.energy - STAT_DECAY_RATES.energy, 0),
+      happiness: Math.min(pet.happiness + STAT_DECAY_RATES.happiness, 100),
     }));
   }
 
@@ -235,7 +235,7 @@ export function App() {
 
       {isGameStarted && (
         <section className="stats-grid">
-          <StatBar label="Hunger" value={pet.hunger} icon="🍽️" />
+          <StatBar label="Hunger" value={pet.hunger} icon="🍽️" reverse />
           <StatBar label="Happiness" value={pet.happiness} icon="😊" />
           <StatBar label="Energy" value={pet.energy} icon="⚡" />
         </section>
