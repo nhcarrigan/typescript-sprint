@@ -26,14 +26,16 @@ const isButtonElement = (element: unknown): element is HTMLButtonElement => {
 
 function refresh(): void {
   if (currentCardIndex < 0 || !currentCards[currentCardIndex]) {
-    cardDisplay.textContent =
+    document.querySelector(".card-front").textContent =
+      "No card selected. Add a new card to get started!";
+    document.querySelector(".card-back").textContent =
       "No card selected. Add a new card to get started!";
     return;
   }
 
   const card = currentCards[currentCardIndex];
-  cardDisplay.querySelector(".card-front").textContent = card.frontText;
-  cardDisplay.querySelector(".card-back").textContent = card.backText;
+  document.querySelector(".card-front").textContent = card.frontText;
+  document.querySelector(".card-back").textContent = card.backText;
   // add correct background to current card
   Array.from(cardButtonsContainer.children).forEach((child, i) => {
     if (!isButtonElement(child)) {
